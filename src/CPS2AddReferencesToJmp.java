@@ -11,8 +11,11 @@ import java.util.ArrayList;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.WordDataType;
+import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.Listing;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.RefType;
@@ -41,16 +44,31 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
 
   private ArrayList<Integer> getJumpTableTargetOffsets(Address jmpTargetBaseAddress) {
     ArrayList<Integer> offsets = new ArrayList<>();
+    Listing listing = currentProgram.getListing();
     try {
-      currentProgram.getListing().createData(jmpTargetBaseAddress, new WordDataType(), 2);
-      int tableSize = getBytesAsWord(currentProgram.getListing().getDataAt(jmpTargetBaseAddress).getBytes());
+      Data data = listing.getDataAt(jmpTargetBaseAddress);
+      boolean isWord = data != null && data.getBaseDataType().isEquivalent(new WordDataType());
+      if (data != null && !isWord) {
+        removeDataAt(jmpTargetBaseAddress);
+        listing.createData(jmpTargetBaseAddress, new WordDataType(), 2);
+      } else if (data == null || !isWord) {
+        listing.createData(jmpTargetBaseAddress, new WordDataType(), 2);
+      }
+      int tableSize = getBytesAsWord(listing.getDataAt(jmpTargetBaseAddress).getBytes());
       offsets.add(tableSize);
       for (int i = 2; i < tableSize; i += 2) {
-        Address newAddr = jmpTargetBaseAddress.getNewAddress(jmpTargetBaseAddress.getOffset() + i, true);
-        currentProgram.getListing().createData(newAddr, new WordDataType());
-        offsets.add(getBytesAsWord(currentProgram.getListing().getDataAt(newAddr).getBytes()));
+        Address nextWordAddr = jmpTargetBaseAddress.getNewAddress(jmpTargetBaseAddress.getOffset() + i, true);
+        data = listing.getDataAt(nextWordAddr);
+        isWord = data != null && data.getBaseDataType().isEquivalent(new WordDataType());
+        if (data != null && !isWord) {
+          removeDataAt(nextWordAddr);
+          listing.createData(nextWordAddr, new WordDataType(), 2);
+        } else if (data == null || !isWord) {
+          listing.createData(nextWordAddr, new WordDataType(), 2);
+        }
+        offsets.add(getBytesAsWord(listing.getDataAt(nextWordAddr).getBytes()));
       }
-    } catch (CodeUnitInsertionException | MemoryAccessException e) {
+    } catch (Exception e) {
       println(e.getMessage());
     }
     return offsets;

@@ -17,6 +17,5 @@ Highlight the `jmp` instruction you wish to repair and run the script. Ensure th
 ### Caveats
 1. Only works on jump tables whose entries are WORDs; this is most of them
 2. Only works on jump tales whose first entries are the table's length; this is most of them
-3. You must clear any assigned data types from the jump table
 
-I plan on fixing #1 and maybe #3.
+I plan on fixing #1.
