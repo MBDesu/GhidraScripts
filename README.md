@@ -16,6 +16,8 @@ Highlight the `jmp` instruction you wish to repair and run the script. Ensure th
 
 ### Caveats
 1. Only works on jump tables whose entries are WORDs; this is most of them
-2. Only works on jump tales whose first entries are the table's length; this is most of them
+2. Only works on jump tables whose first entries are the table's length; this is most of them
 
-I plan on fixing #1.
+#2 is technically untrue; it will work on tables of any length but it may overwrite data outside of the table bounds unless it is already defined. If it is, then it's fine, but if you have yet-to-be-disassembled code after your jump table, best to be pretty sure the length of the jump table is the first WORD in it.
+
+I plan on fixing #1 and looking into what can be done about #2. Perhaps some heuristics.
