@@ -11,17 +11,14 @@ import java.util.ArrayList;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.WordDataType;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.SourceType;
-import ghidra.program.model.util.CodeUnitInsertionException;
 
 public class CPS2AddReferencesToJmp extends GhidraScript {
 
