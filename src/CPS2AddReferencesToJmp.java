@@ -74,10 +74,21 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
     return offsets;
   }
 
+  private void addReferences(Instruction currentInstruction, Address jmpTargetBaseAddress, ArrayList<Integer> jmpTableTargetOffsets) {
+    for (int i = 0; i < jmpTableTargetOffsets.size(); i++) {
+      Address jmpTargetAddress = jmpTargetBaseAddress.getNewAddress(jmpTargetBaseAddress.getOffset() + jmpTableTargetOffsets.get(i));
+      if (currentInstruction.getFlowType().isJump()) {
+        currentInstruction.addMnemonicReference(jmpTargetAddress, RefType.COMPUTED_JUMP, SourceType.USER_DEFINED);
+      } else { // jsr
+        currentInstruction.addOperandReference(0, jmpTargetAddress, RefType.COMPUTED_JUMP, SourceType.USER_DEFINED);
+      }
+    }
+  }
+
   protected void run() throws Exception {
     Instruction currentInstruction = currentProgram.getListing().getInstructionAt(currentAddress);
-    if (currentInstruction == null || !currentInstruction.getFlowType().isJump() || !currentInstruction.getMnemonicString().equals("jmp")) {
-      println("Instruction must be a jmp");
+    if (currentInstruction == null || (!currentInstruction.getFlowType().isJump() && !currentInstruction.getFlowType().isCall()) || (!currentInstruction.getMnemonicString().equals("jmp") && !currentInstruction.getMnemonicString().equals("jsr"))) {
+      println("Instruction must be a jmp or jsr");
       return;
     }
     Address jmpTargetBaseAddress = getJmpTargetBaseAddress(currentInstruction);
@@ -85,13 +96,12 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
       println("Instruction's first operand must be the address of the jump table");
       return;
     }
-    ArrayList<Integer> jmpTableTargetOffsets = getJumpTableTargetOffsets(jmpTargetBaseAddress);
-    for (int i = 0; i < jmpTableTargetOffsets.size(); i++) {
-      currentInstruction.addMnemonicReference(jmpTargetBaseAddress.getNewAddress(jmpTargetBaseAddress.getOffset() + jmpTableTargetOffsets.get(i)), RefType.COMPUTED_JUMP, SourceType.USER_DEFINED);
-    }
-    runScript("SwitchOverride");
-    for(Reference r : currentInstruction.getMnemonicReferences()) {
-      currentInstruction.removeMnemonicReference(r.getToAddress());
+    addReferences(currentInstruction, jmpTargetBaseAddress, getJumpTableTargetOffsets(jmpTargetBaseAddress));
+    if (currentInstruction.getFlowType().isJump()) {
+      runScript("SwitchOverride");
+      for(Reference r : currentInstruction.getMnemonicReferences()) {
+        currentInstruction.removeMnemonicReference(r.getToAddress());
+      }
     }
   }
 
