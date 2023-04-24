@@ -68,8 +68,8 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
         createWordAt(nextWordAddr);
         offsets.add(getBytesAsWord(listing.getDataAt(nextWordAddr).getBytes()));
       }
-    } catch (MemoryAccessException e) {
-      println(e.getMessage());
+    } catch (NullPointerException | MemoryAccessException e) {
+      return offsets;
     }
     return offsets;
   }
@@ -99,9 +99,9 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
     addReferences(currentInstruction, jmpTargetBaseAddress, getJumpTableTargetOffsets(jmpTargetBaseAddress));
     if (currentInstruction.getFlowType().isJump()) {
       runScript("SwitchOverride");
-      for(Reference r : currentInstruction.getMnemonicReferences()) {
-        currentInstruction.removeMnemonicReference(r.getToAddress());
-      }
+    }
+    for(Reference r : currentInstruction.getMnemonicReferences()) {
+      currentInstruction.removeMnemonicReference(r.getToAddress());
     }
   }
 
