@@ -8,14 +8,17 @@
 
 import java.util.ArrayList;
 
+import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.WordDataType;
 import ghidra.program.model.listing.Data;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.pcode.JumpTable;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.Reference;
@@ -85,6 +88,21 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
     }
   }
 
+  private void createJumpTable(Address jmpTargetBaseAddress, ArrayList<Integer> jumpTableTargetOffsets) throws Exception {
+    ArrayList<Address> destlist = new ArrayList<>();
+    for (Integer i : jumpTableTargetOffsets) {
+      destlist.add(jmpTargetBaseAddress.getNewAddress(jmpTargetBaseAddress.getOffset() + i));
+    }
+    Function function = this.getFunctionContaining(currentAddress);
+    if (function == null) {
+      println("Gotta be in a function body");
+      return;
+    }
+    JumpTable jumpTable = new JumpTable(currentLocation.getAddress(), destlist, true);
+    jumpTable.writeOverride(function);
+    CreateFunctionCmd.fixupFunctionBody(currentProgram, function, monitor);
+  }
+
   protected void run() throws Exception {
     Instruction currentInstruction = currentProgram.getListing().getInstructionAt(currentAddress);
     if (currentInstruction == null || (!currentInstruction.getFlowType().isJump() && !currentInstruction.getFlowType().isCall()) || (!currentInstruction.getMnemonicString().equals("jmp") && !currentInstruction.getMnemonicString().equals("jsr"))) {
@@ -96,9 +114,12 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
       println("Instruction's first operand must be the address of the jump table");
       return;
     }
-    addReferences(currentInstruction, jmpTargetBaseAddress, getJumpTableTargetOffsets(jmpTargetBaseAddress));
+    ArrayList<Integer> jumpTableTargetOffsets = getJumpTableTargetOffsets(jmpTargetBaseAddress);
+    addReferences(currentInstruction, jmpTargetBaseAddress, jumpTableTargetOffsets);
     if (currentInstruction.getFlowType().isJump()) {
       runScript("SwitchOverride");
+    } else {
+      createJumpTable(jmpTargetBaseAddress, jumpTableTargetOffsets);
     }
     for(Reference r : currentInstruction.getMnemonicReferences()) {
       currentInstruction.removeMnemonicReference(r.getToAddress());
