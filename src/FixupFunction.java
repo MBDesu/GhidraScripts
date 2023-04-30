@@ -1,5 +1,4 @@
 //Fixes up a function. Useful for after adding jump tables.
-//where the first byte is the length of the table, which is usually the case.
 //@author MBDesu
 //@category Repair
 //@keybinding
