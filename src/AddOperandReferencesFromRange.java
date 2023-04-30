@@ -22,7 +22,7 @@ import ghidra.program.model.listing.Listing;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
 
-public class CPS2AddOperandReferencesFromRange extends GhidraScript {
+public class AddOperandReferencesFromRange extends GhidraScript {
 
   List<RefType> REF_TYPES = Arrays.asList(
       new RefType[] { RefType.COMPUTED_JUMP, RefType.COMPUTED_CALL, RefType.INDIRECTION, RefType.READ, RefType.WRITE, RefType.READ_WRITE });

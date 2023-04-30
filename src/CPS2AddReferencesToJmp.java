@@ -83,7 +83,7 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
       if (currentInstruction.getFlowType().isJump()) {
         currentInstruction.addMnemonicReference(jmpTargetAddress, RefType.COMPUTED_JUMP, SourceType.USER_DEFINED);
       } else { // jsr
-        currentInstruction.addOperandReference(0, jmpTargetAddress, RefType.COMPUTED_JUMP, SourceType.USER_DEFINED);
+        currentInstruction.addOperandReference(0, jmpTargetAddress, RefType.COMPUTED_CALL, SourceType.USER_DEFINED);
       }
     }
   }
@@ -118,6 +118,12 @@ public class CPS2AddReferencesToJmp extends GhidraScript {
     addReferences(currentInstruction, jmpTargetBaseAddress, jumpTableTargetOffsets);
     if (currentInstruction.getFlowType().isJump()) {
       runScript("SwitchOverride");
+      Function function = this.getFunctionContaining(currentAddress);
+      if (function == null) {
+        println("Gotta be in a function body");
+        return;
+      }
+      CreateFunctionCmd.fixupFunctionBody(currentProgram, function, monitor);
     } else {
       createJumpTable(jmpTargetBaseAddress, jumpTableTargetOffsets);
     }
